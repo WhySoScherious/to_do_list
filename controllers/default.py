@@ -9,18 +9,51 @@
 ## - call exposes all registered services (none by default)
 #########################################################################
 
+def get_email():
+    """Get the logged in user's email."""
+    if auth.user:
+        return auth.user.email
+    else:
+        return 'None'
 
 def index():
-    """
-    example action using the internationalization operator T and flash
-    rendered by views/default/index.html or views/generic.html
+    """Homepage for my task list site. Guest users will default to
+       this page."""
+    if auth.user:
+        redirect(URL('index_user'))
 
-    if you need a simple wiki simple replace the two lines below with:
-    return auth.wiki()
-    """
-    response.flash = T("Welcome to web2py!")
-    return dict(message=T('Hello World'))
+    return dict()
 
+@auth.requires_login()
+def index_user():
+    """Main page for logged in users with task list."""
+    q = db.a_owner.owner_email == get_email()
+    
+    if q == None:
+        db.a_owner.insert(owner_email=get_email())
+    
+    grid = SQLFORM.grid(q,
+        fields=[db.a_owner.my_items],
+        csv=False, details=False, create=False, editable=False
+        )
+    return dict(grid=grid)
+
+def view_task():
+    return dict()
+
+@auth.requires_login()
+def add_task():
+    """Adds a task for a particular user."""
+    form = SQLFORM(db.task)
+
+    if form.process().accepted:
+        redirect(URL('default', 'index_user'))
+    
+    return dict(form=form)
+
+@auth.requires_login()
+def send_task():
+    return dict()
 
 def user():
     """

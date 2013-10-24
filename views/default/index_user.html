@@ -1,0 +1,15 @@
+{{extend 'layout.html'}}
+
+<h1><center>Welcome to My Task List</center></h1>
+
+<br><br>
+
+{{=grid}}
+
+<br><br>
+
+<p><center>
+{{=A('Create Task', _class='btn', _href=URL('default', 'add_task'))}}
+{{=A('Send Task', _class='btn', _href=URL('default', 'send_task'))}}
+</center>
+</p>
