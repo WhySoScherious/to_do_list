@@ -17,8 +17,8 @@ def get_email():
 db.define_table('task',
     Field('title', 'string'),
     Field('description', 'text'),
-    Field('author', 'string', default=get_name()),
-    Field('author_email', 'string', default=get_email()),
+    Field('author_email', 'reference a_owner'),
+    Field('shared_task', 'boolean', default=None),
     Field('done', 'boolean', default=None)
     )
 
@@ -27,4 +27,3 @@ db.task.done.writable = False
 db.task.author_email.readable = False
 db.task.author_email.writable = False
 db.task.id.readable = False
-db.task.author.writable = False

@@ -27,14 +27,15 @@ def index():
 @auth.requires_login()
 def index_user():
     """Main page for logged in users with task list."""
-    q = db.a_owner.owner_email == get_email()
-    
-    if q == None:
-        db.a_owner.insert(owner_email=get_email())
+    if db(db.a_owner.owner_email == get_email()).select().first() is None:
+        db.a_owner.insert(owner_email = get_email())
+
+    row = db(db.a_owner.owner_email == get_email()).select().first()
+    q = (db.task.author_email == row.id) and (db.task.shared_task == False)
     
     grid = SQLFORM.grid(q,
-        fields=[db.a_owner.my_items],
-        csv=False, details=False, create=False, editable=False
+        fields=[db.task.title],
+        csv=False, details=False, create=False
         )
     return dict(grid=grid)
 
@@ -46,6 +47,8 @@ def add_task():
     """Adds a task for a particular user."""
     form = SQLFORM(db.task)
 
+    row = db(db.a_owner.owner_email == get_email()).select().first()
+    form.vars.author_email = row.id
     if form.process().accepted:
         redirect(URL('default', 'index_user'))
     
