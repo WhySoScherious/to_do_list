@@ -16,6 +16,13 @@ def get_email():
     else:
         return 'None'
 
+def get_id():
+    """Get the logged in user's id."""
+    if auth.user:
+        return auth.user.id
+    else:
+        return 'None'
+    
 def index():
     """Homepage for my task list site. Guest users will default to
        this page."""
@@ -31,16 +38,54 @@ def index_user():
         db.a_owner.insert(owner_email = get_email())
 
     row = db(db.a_owner.owner_email == get_email()).select().first()
-    q = (db.task.author_email == row.id) and (db.task.shared_task == False)
-    
+    q = ((db.task.author == row.id) & (db.task.shared_task == False)) | \
+        (db.task.shared_email == get_email())
+
     grid = SQLFORM.grid(q,
         fields=[db.task.title],
-        csv=False, details=False, create=False
+        csv=False, create=False, editable=False,
+        links=[lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id])),
+               lambda row: A('Send Task',_class="btn",_href=URL("default","send_task",args=[row.id]))],
         )
     return dict(grid=grid)
 
-def view_task():
-    return dict()
+@auth.requires_login()
+def assigned_task():
+    row = db(db.a_owner.owner_email == get_email()).select().first()
+    q = ((db.task.author == row.id) & (db.task.shared_task == True))
+    
+    db.task.shared_email.readable=True
+    db.task.shared_email.label='Sent From'
+    grid = SQLFORM.grid(q,
+        fields=[db.task.title, db.task.shared_email],
+        csv=False, create=False, editable=False,
+        links=[lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id]))]
+        )
+    return dict(grid=grid)
+
+def check_request():
+    task_id = request.args(0)
+    record = db(db.task.id == task_id).select().first()
+    if (record is None) or (record.author != get_id()):
+        session.flash = "Invalid request"
+        redirect(URL('default', 'index_user'))
+    return record
+
+@auth.requires_login()
+def edit_task():
+    record = check_request()
+
+    form = SQLFORM(db.task, record,
+        fields=['title', 'description', 'shared_task']
+        )
+
+    if form.process().accepted:
+        if form.vars.shared_task == True:
+            redirect(URL('default', 'send_task', args=(form.vars.id)))
+        session.flash = 'Task updated'
+        redirect(URL('default', 'index_user'))
+
+    return dict(form=form)
 
 @auth.requires_login()
 def add_task():
@@ -48,15 +93,44 @@ def add_task():
     form = SQLFORM(db.task)
 
     row = db(db.a_owner.owner_email == get_email()).select().first()
-    form.vars.author_email = row.id
+    form.vars.author = row.id
+    
     if form.process().accepted:
+        if form.vars.shared_task == True:
+            redirect(URL('default', 'send_task', args=(form.vars.id)))
+        session.flash = 'Task added'
         redirect(URL('default', 'index_user'))
     
     return dict(form=form)
 
 @auth.requires_login()
 def send_task():
-    return dict()
+    """Asks for email for user to send task to."""
+    record = check_request()
+
+    db.task.shared_email.readable = True
+    db.task.shared_email.writable = True
+    db.task.title.writable = False
+    db.task.description.writable = False
+    form = SQLFORM(db.task, record,
+        fields=['title', 'description', 'shared_email'],
+        buttons=[TAG.button('Submit',_type="submit"),TAG.button('Cancel',_type="button",_onClick = "parent.location='%s' " % URL('dont_share', args=(request.args(0))))]
+        )
+
+    if form.process().accepted:
+        if form.vars.shared_email == get_email():
+            session.flash = 'Cannot enter your own email'
+            redirect(URL('default', 'send_task', args=(request.args(0))))
+        session.flash = 'Task sent'
+        redirect(URL('default', 'index_user'))
+
+    return dict(form=form)
+
+@auth.requires_login()
+def dont_share():
+    record = check_request()
+    record.update_record(shared_task = False)
+    redirect(URL('default', 'index_user'))
 
 def user():
     """

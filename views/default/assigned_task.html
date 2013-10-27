@@ -1,6 +1,6 @@
 {{extend 'layout.html'}}
 
-<h1><center>Welcome to My Task List</center></h1>
+<h1>Assigned Tasks</h1>
 
 <br><br>
 
@@ -10,6 +10,6 @@
 
 <p><center>
 {{=A('Create Task', _class='btn', _href=URL('default', 'add_task'))}}
-{{=A('View Sent Tasks', _class='btn', _href=URL('default', 'assigned_task'))}}
+{{=A('View My Tasks', _class='btn', _href=URL('default', 'index_user'))}}
 </center>
 </p>

@@ -17,13 +17,20 @@ def get_email():
 db.define_table('task',
     Field('title', 'string'),
     Field('description', 'text'),
-    Field('author_email', 'reference a_owner'),
-    Field('shared_task', 'boolean', default=None),
-    Field('done', 'boolean', default=None)
+    Field('author', 'reference a_owner'),
+    Field('shared_email', 'string', default=None),
+    Field('shared_task', 'boolean', default=False),
+    Field('done', 'boolean', default=None),
     )
 
 db.task.done.readable = False
 db.task.done.writable = False
-db.task.author_email.readable = False
-db.task.author_email.writable = False
+db.task.author.readable = False
+db.task.author.writable = False
 db.task.id.readable = False
+db.task.shared_task.readable = False
+db.task.shared_task.label = 'Assign task to someone?'
+db.task.shared_email.readable = False
+db.task.shared_email.writable = False
+db.task.shared_email.label = 'Email task to'
+db.task.shared_email.requires = [IS_IN_DB(db, db.auth_user.email, error_message='Email not registered')]
