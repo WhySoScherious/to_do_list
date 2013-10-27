@@ -121,6 +121,7 @@ def send_task():
         if form.vars.shared_email == get_email():
             session.flash = 'Cannot enter your own email'
             redirect(URL('default', 'send_task', args=(request.args(0))))
+        record.update_record(shared_task=True)
         session.flash = 'Task sent'
         redirect(URL('default', 'index_user'))
 
