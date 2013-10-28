@@ -34,10 +34,13 @@ def index():
 @auth.requires_login()
 def index_user():
     """Main page for logged in users with task list."""
-    if db(db.a_owner.owner_email == get_email()).select().first() is None:
+
+    # Check if the logged in user is in the a_owner database.
+    row = db(db.a_owner.owner_email == get_email()).select().first()
+    if row is None:
         db.a_owner.insert(owner_email = get_email())
 
-    row = db(db.a_owner.owner_email == get_email()).select().first()
+    #Show tasks created by logged user, not including sent tasks.
     q = ((db.task.author == row.id) & (db.task.shared_task == False)) | \
         (db.task.shared_email == get_email())
 
@@ -51,6 +54,7 @@ def index_user():
 
 @auth.requires_login()
 def assigned_task():
+    """Show tasks logged user assigned to others."""
     row = db(db.a_owner.owner_email == get_email()).select().first()
     q = ((db.task.author == row.id) & (db.task.shared_task == True))
     
@@ -64,6 +68,7 @@ def assigned_task():
     return dict(grid=grid)
 
 def check_request():
+    """Check if the URL request was made by user who owns task."""
     task_id = request.args(0)
     record = db(db.task.id == task_id).select().first()
     if (record is None) or (record.author != get_id()):
@@ -73,6 +78,7 @@ def check_request():
 
 @auth.requires_login()
 def edit_task():
+    """Edits a task requested."""
     record = check_request()
 
     form = SQLFORM(db.task, record,
@@ -83,7 +89,7 @@ def edit_task():
         if form.vars.shared_task == True:
             redirect(URL('default', 'send_task', args=(form.vars.id)))
         session.flash = 'Task updated'
-        redirect(URL('default', 'index_user'))
+        redirect(URL('default', 'dont_share', args=(form.vars.id)))
 
     return dict(form=form)
 
@@ -92,10 +98,12 @@ def add_task():
     """Adds a task for a particular user."""
     form = SQLFORM(db.task)
 
+    # Assign a_owner to task being added.
     row = db(db.a_owner.owner_email == get_email()).select().first()
     form.vars.author = row.id
     
     if form.process().accepted:
+        # If the user assigns task, go to send_task form.
         if form.vars.shared_task == True:
             redirect(URL('default', 'send_task', args=(form.vars.id)))
         session.flash = 'Task added'
@@ -118,6 +126,7 @@ def send_task():
         )
 
     if form.process().accepted:
+        # Do not let user assign task to themself.
         if form.vars.shared_email == get_email():
             session.flash = 'Cannot enter your own email'
             redirect(URL('default', 'send_task', args=(request.args(0))))
@@ -129,8 +138,11 @@ def send_task():
 
 @auth.requires_login()
 def dont_share():
+    """User who cancels request to send task is sent here to set task
+       as not shared."""
     record = check_request()
     record.update_record(shared_task = False)
+    record.update_record(shared_email = None)
     redirect(URL('default', 'index_user'))
 
 def user():
