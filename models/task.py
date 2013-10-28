@@ -20,7 +20,7 @@ db.define_table('task',
     Field('author', 'reference a_owner'),
     Field('shared_email', 'string', default=None),
     Field('shared_task', 'boolean', default=False),
-    Field('done', 'boolean', default=None),
+    Field('done', 'boolean', default=False),
     )
 
 db.task.done.readable = False

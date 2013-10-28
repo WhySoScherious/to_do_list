@@ -40,15 +40,16 @@ def index_user():
     if row is None:
         db.a_owner.insert(owner_email = get_email())
 
-    #Show tasks created by logged user, not including sent tasks.
-    q = ((db.task.author == row.id) & (db.task.shared_task == False)) | \
-        (db.task.shared_email == get_email())
+    # Show tasks created by logged user, not including sent and completed tasks.
+    q = ((db.task.author == row.id) & (db.task.shared_task == False) & (db.task.done == False)) | \
+        ((db.task.shared_email == get_email()) & (db.task.done == False))
 
     grid = SQLFORM.grid(q,
         fields=[db.task.title],
         csv=False, create=False, editable=False,
         links=[lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id])),
-               lambda row: A('Send Task',_class="btn",_href=URL("default","send_task",args=[row.id]))],
+               lambda row: A('Send Task',_class="btn",_href=URL("default","send_task",args=[row.id])),
+               lambda row: A('Mark Complete',_class="btn",_href=URL("default","mark_complete",args=[row.id]))],
         )
     return dict(grid=grid)
 
@@ -63,7 +64,24 @@ def assigned_task():
     grid = SQLFORM.grid(q,
         fields=[db.task.title, db.task.shared_email],
         csv=False, create=False, editable=False,
-        links=[lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id]))]
+        links=[lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id])),
+               lambda row: A('Mark Complete',_class="btn",_href=URL("default","mark_complete",args=[row.id]))]
+        )
+    return dict(grid=grid)
+
+@auth.requires_login()
+def completed_task():
+    """List of user's completed tasks."""
+    row = db(db.a_owner.owner_email == get_email()).select().first()
+
+    # Show tasks created by logged user, not including sent and completed tasks.
+    q = ((db.task.author == row.id) & (db.task.shared_task == False) & (db.task.done == True)) | \
+        ((db.task.shared_email == get_email()) & (db.task.done == True))
+    
+    grid = SQLFORM.grid(q,
+        fields=[db.task.title],
+        csv=False, create=False, editable=False,
+        links=[lambda row: A('Mark Incomplete',_class="btn",_href=URL("default","mark_incomplete",args=[row.id]))]
         )
     return dict(grid=grid)
 
@@ -135,6 +153,18 @@ def send_task():
         redirect(URL('default', 'index_user'))
 
     return dict(form=form)
+
+@auth.requires_login()
+def mark_complete():
+    record = check_request()
+    record.update_record(done = True)
+    redirect(URL('default', 'index_user'))
+
+@auth.requires_login()
+def mark_incomplete():
+    record = check_request()
+    record.update_record(done = False)
+    redirect(URL('default', 'completed_task'))
 
 @auth.requires_login()
 def dont_share():
