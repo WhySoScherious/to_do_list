@@ -45,17 +45,18 @@ def index_user():
     # Show tasks created by logged user, not including sent and completed tasks.
     q = ((db.task.author == row.id) & (db.task.shared_task == False) & (db.task.done == False))
 
+    grid = SQLFORM.grid(q,
+        fields=[db.task.title],
+        csv=False, create=False, editable=False, details=False,
+        links=[lambda row: A('Mark Complete',_class="btn",_href=URL("default","mark_complete",args=[row.id])),
+               lambda row: A('View',_class="btn",_href=URL("default","view_task",args=[row.id])),
+               lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id])),
+               lambda row: A('Send Task',_class="btn",_href=URL("default","send_task",args=[row.id]))]
+        )
+    
     db.task.author.readable=True
     db.task.author.label='Created by'
     db.task.author.represent = lambda id, row: id.owner_email
-    grid = SQLFORM.grid(q,
-        fields=[db.task.title, db.task.author],
-        csv=False, create=False, editable=False,
-        links=[lambda row: A('Mark Complete',_class="btn",_href=URL("default","mark_complete",args=[row.id])),
-               lambda row: A('Send Task',_class="btn",_href=URL("default","send_task",args=[row.id])),
-               lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id]))]
-        )
-    
     shared_tasks = ((db.task.shared_email == get_email()) & (db.task.pending == False) & (db.task.done == False))
     shared_grid = SQLFORM.grid(shared_tasks,
         fields=[db.task.title, db.task.author],
@@ -95,7 +96,7 @@ def completed_task():
         ((db.task.shared_email == get_email()) & (db.task.done == True))
 
     db.task.author.readable=True
-    db.task.author.label='Sent From'
+    db.task.author.label='Created by'
     db.task.author.represent = lambda id, row: id.owner_email
     grid = SQLFORM.grid(q,
         fields=[db.task.title, db.task.author],
@@ -129,6 +130,27 @@ def check_request():
         session.flash = "Invalid request"
         redirect(URL('default', 'index_user'))
     return record
+
+@auth.requires_login()
+def view_task():
+    """Views a task requested."""
+    record = check_request()
+
+    db.task.title.writable=False
+    db.task.description.writable=False
+    db.task.author.readable=True
+    db.task.author.label='Created by'
+    db.task.author.represent = lambda id, row: id.owner_email
+    form = SQLFORM(db.task, record,
+        fields=['title', 'description', 'author'],
+        buttons=[TAG.button('Back',_type="button",_onClick = "parent.location='%s' " % URL('index_user'))]
+        )
+
+    if form.process().accepted:
+        session.flash = 'Task updated'
+        redirect(URL('default', 'index_user'))
+
+    return dict(form=form)
 
 @auth.requires_login()
 def edit_task():
