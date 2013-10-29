@@ -2,6 +2,17 @@
 
 <h1>Completed Tasks</h1>
 
+<br>
+
+{{if pending:}}
+    {{if pending == 1:}}
+        You have 1 pending task.
+    {{elif pending:}}
+        You have {{=pending}} pending tasks.
+    {{pass}}
+    Click {{=A('here', _href=URL('default', 'pending_task'))}} to accept/reject.
+{{pass}}
+
 <br><br>
 
 {{=grid}}

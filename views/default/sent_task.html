@@ -1,6 +1,6 @@
 {{extend 'layout.html'}}
 
-<h1><center>My Task List</center></h1>
+<h1>Sent Tasks</h1>
 
 <br>
 
@@ -15,18 +15,12 @@
 
 <br><br>
 
-<h2>Tasks I Created</h2>
 {{=grid}}
 
 <br><br>
 
-<h2>Tasks Assigned to Me</h2>
-{{=shared_grid}}
-
-<br><br>
 <p><center>
 {{=A('Create Task', _class='btn', _href=URL('default', 'add_task'))}}
-{{=A('View Sent Tasks', _class='btn', _href=URL('default', 'sent_task'))}}
-{{=A('View Completed Tasks', _class='btn', _href=URL('default', 'completed_task'))}}
+{{=A('View My Tasks', _class='btn', _href=URL('default', 'index_user'))}}
 </center>
 </p>

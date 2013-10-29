@@ -21,8 +21,10 @@ db.define_table('task',
     Field('shared_email', 'string', default=None),
     Field('shared_task', 'boolean', default=False),
     Field('done', 'boolean', default=False),
+    Field('pending', 'boolean', default=False)
     )
 
+db.task.title.requires = IS_NOT_EMPTY()
 db.task.done.readable = False
 db.task.done.writable = False
 db.task.author.readable = False
@@ -34,3 +36,5 @@ db.task.shared_email.readable = False
 db.task.shared_email.writable = False
 db.task.shared_email.label = 'Email task to'
 db.task.shared_email.requires = [IS_IN_DB(db, db.auth_user.email, error_message='Email not registered')]
+db.task.pending.readable = False
+db.task.pending.writable = False
