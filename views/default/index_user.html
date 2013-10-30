@@ -16,12 +16,20 @@
 <br><br>
 
 <h2>Tasks I Created</h2>
-{{=grid}}
+{{if my_task_count > 0:}}
+    {{=grid}}
+{{else:}}
+    You have no tasks.
+{{pass}}
 
-<br><br>
+<br><br><br><br>
 
 <h2>Tasks Assigned to Me</h2>
-{{=shared_grid}}
+{{if shared_task_count > 0:}}
+    {{=shared_grid}}
+{{else:}}
+    You have no tasks assigned.
+{{pass}}
 
 <br><br>
 <p><center>

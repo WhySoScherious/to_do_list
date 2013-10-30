@@ -45,6 +45,9 @@ def index_user():
     # Show tasks created by logged user, not including sent and completed tasks.
     q = ((db.task.author == row.id) & (db.task.shared_task == False) & (db.task.done == False))
 
+    # Get count of rows in grid.
+    my_task_count = db((db.task.author == row.id) & (db.task.shared_task == False) & (db.task.done == False)).count()
+
     grid = SQLFORM.grid(q,
         fields=[db.task.title],
         csv=False, create=False, editable=False, details=False,
@@ -58,13 +61,19 @@ def index_user():
     db.task.author.label='Created by'
     db.task.author.represent = lambda id, row: id.owner_email
     shared_tasks = ((db.task.shared_email == get_email()) & (db.task.pending == False) & (db.task.done == False))
+
+    # Get count of rows in grid.
+    shared_tasks_count = db((db.task.shared_email == get_email()) & (db.task.pending == False) & (db.task.done == False)).count()
+    
     shared_grid = SQLFORM.grid(shared_tasks,
         fields=[db.task.title, db.task.author],
-        csv=False, create=False, editable=False,
+        csv=False, create=False, editable=False, details=False,
         links=[lambda row: A('Mark Complete',_class="btn",_href=URL("default","mark_complete",args=[row.id])),
+               lambda row: A('View',_class="btn",_href=URL("default","view_task",args=[row.id])),
                lambda row: A('Edit',_class="btn",_href=URL("default","edit_task",args=[row.id]))]
         )
-    return dict(grid=grid, shared_grid=shared_grid, pending=pending)
+    return dict(grid=grid, shared_grid=shared_grid, pending=pending,
+        my_task_count=my_task_count, shared_task_count=shared_tasks_count)
 
 @auth.requires_login()
 def sent_task():
